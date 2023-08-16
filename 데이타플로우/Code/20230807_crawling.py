@@ -2,14 +2,14 @@ import os
 import pandas as pd
 import numpy as np
 
-import csv
+import time
 from tqdm.auto import tqdm
 import multiprocessing
 
 import requests
 from bs4 import BeautifulSoup
 
-path_save = 'href_탈모톡톡_탈모수다.csv'
+path_save = '샴푸&두피케어_체험평가단.csv'
 path_save_base = '../Data'
 save_path = os.path.join(path_save_base, path_save)
 fieldNames = ['title', 'category', 'date', 'writer', 'rank', 'view', 'href', 'content', 'imageList']
@@ -22,7 +22,11 @@ def clawringContentImage(href):
         soup = BeautifulSoup(html, 'html.parser')
         
         res = soup.find('h3', {'id' : 'view_content'})
-        content = res.text
+        try:
+            content = res.text
+        except:
+            return np.nan, []
+        
         images = res.find_all('img', {'class' : 'lazy content-image'})
 
         if images != []:
@@ -36,6 +40,7 @@ def clawringContentImage(href):
     
 def parsing_save(re):
     re = BeautifulSoup(re, 'html.parser')
+    print(type(re))
     category = re.find('a', {'class' : 'mw_basic_list_category'}).text
     date = re.find('div', {'class' : 'mw_basic_list_datetime media-no-text'}).text
     view = re.find('div', {'class' : 'mw_basic_list_hit media-no-text'}).text
@@ -50,57 +55,107 @@ def parsing_save(re):
 
     content, imageList = clawringContentImage(href)
 
-    with open(save_path, 'a', newline = '') as csvfile:
-        csvWriter = csv.DictWriter(csvfile, fieldnames = fieldNames)
-        
-        try:
-            csvWriter.writerow({'title' : title,
-                                'category' : category,
-                                'date' : date,
-                                'writer' : writer,
-                                'rank' : rank,
-                                'view' : view,
-                                'href' : href,
-                                'content' : content,
-                                'imageList' : imageList})      
-        except:
-            print(href, ': Error')
+    try:
+        pd.DataFrame({'title' : [title],
+                      'category' : [category],
+                      'date' : [date],
+                      'writer' : [writer],
+                      'rank' : [rank],
+                      'view' : [view],
+                      'href' : [href],
+                      'content' : [content.strip()],
+                      'imageList' : [imageList]}).to_csv(save_path,
+                                                         mode = 'a',
+                                                         index = False,
+                                                         header = False,
+                                                         encoding = 'utf-8-sig')
+    except:
+        print({'title' : title,
+                'category' : category,
+                'date' : date,
+                'writer' : writer,
+                'rank' : rank,
+                'view' : view,
+                'href' : href,
+                'content' : content,
+                'imageList' : imageList})
+        print(href, ': Error', '\n')
+        print('==================================================================')
 
 def clawringHref01(url, pageNum, startPage = 1):
     if not os.path.isfile(save_path):
         tmp = pd.DataFrame(columns = fieldNames)
-        tmp.to_csv(save_path, index = False)
-        
-        with open(save_path, 'w', newline = '') as csvfile:
-            csvWriter = csv.DictWriter(csvfile, fieldnames = fieldNames)
-            csvWriter.writeheader()
+        tmp.to_csv(save_path, index = False, encoding = 'utf-8-sig', header=fieldNames)
 
     for page in tqdm(range(startPage, pageNum + 1)):
         page = str(page)
-        response = requests.get(url + page)
-        if response.status_code == 200:
-            html = response.text
-            soup = BeautifulSoup(html, 'html.parser')
-            re_list = soup.find_all('div', {"class":"list_wrap flex_spbtw"})
-            re_list = [str(re) for re in re_list]
-    
-            with multiprocessing.Pool(multiprocessing.cpu_count() -2) as p:
-                p.map(parsing_save, re_list)
+        for _ in range(3):
+            try:
+                response = requests.get(url + page)
+                if response.status_code == 200:
+                    html = response.text
+                    soup = BeautifulSoup(html, 'html.parser')
+                    re_list = soup.find_all('div', {"class" : "list_wrap flex_spbtw"})
+                    re_list = [str(re) for re in re_list]
+                    with multiprocessing.Pool(multiprocessing.cpu_count() -2) as p:
+                        p.map(parsing_save, re_list)
+                    break
+            except requests.exceptions.ConnectionError:
+                time.sleep(5)
 
+
+def clawringHref02(url, pageNum, startPage = 1):
+    if not os.path.isfile(save_path):
+        tmp = pd.DataFrame(columns = fieldNames)
+        tmp.to_csv(save_path, index = False, encoding = 'utf-8-sig', header=fieldNames)
+
+    for page in tqdm(range(startPage, pageNum + 1)):
+        page = str(page)
+        for _ in range(3):
+            try:
+                response = requests.get(url + page)
+
+                if response.status_code == 200:
+                    html = response.text
+                    soup = BeautifulSoup(html, 'html.parser')
+                    re_list = soup.find_all('div', {"class" : ["list_wrap", "flex_spbtw"]})
+                    notice_list = soup.find_all('div', {'class' : ['notice_wrap']})
+                    
+                    if page == '1':
+                        re_list = re_list[len(notice_list):]
+                    re_list = [str(re) for re in re_list]
+                    with multiprocessing.Pool(multiprocessing.cpu_count() -2) as p:
+                        p.map(parsing_save, re_list)
+                    break
+            except requests.exceptions.ConnectionError:
+                time.sleep(5)
 
 if __name__ == '__main__':
     multiprocessing.freeze_support()
     path_save_base = '../Data'
     fieldNames = ['title', 'category', 'date', 'writer', 'rank', 'view', 'href', 'content', 'imageList']
 
-    path_save = 'href_탈모톡톡_탈모수다.csv'
-    save_path = os.path.join(path_save_base, path_save)
-    url = 'https://daedamo.com/story?overlaps=1&page='
-    pageNum = 1000
-    clawringHref01(url, pageNum)
+    # path_save = '탈모톡톡_탈모수다.csv'
+    # save_path = os.path.join(path_save_base, path_save)
+    # url = 'https://daedamo.com/story?overlaps=1&page='
+    # pageNum = 1500
+    # startPage = 1019
+    # clawringHref01(url, pageNum, startPage)
 
-    path_save = 'href_탈모톡톡_샴푸&영양제.csv'
+    # path_save = '샴푸&두피케어_샴푸&영양제.csv'
+    # save_path = os.path.join(path_save_base, path_save)
+    # url = 'https://daedamo.com/balmo?overlaps=1&page='
+    # pageNum = 120
+    # clawringHref01(url, pageNum)
+
+    # path_save = '탈모톡톡_19~23세탈모.csv'
+    # save_path = os.path.join(path_save_base, path_save)
+    # url = 'https://daedamo.com/1923club?overlaps=1&page='
+    # pageNum = 356
+    # clawringHref01(url, pageNum)
+
+    path_save = '샴푸&두피케어_체험평가단.csv'
     save_path = os.path.join(path_save_base, path_save)
-    url = 'https://daedamo.com/balmo?overlaps=1&page='
-    pageNum = 120
-    clawringHref01(url, pageNum)
+    url = 'https://daedamo.com/job?overlaps=5&page='
+    pageNum = 39
+    clawringHref02(url, pageNum)
