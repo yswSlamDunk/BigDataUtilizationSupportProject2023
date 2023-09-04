@@ -40,7 +40,6 @@ def clawringContentImage(href):
     
 def parsing_save(re):
     re = BeautifulSoup(re, 'html.parser')
-    print(type(re))
     category = re.find('a', {'class' : 'mw_basic_list_category'}).text
     date = re.find('div', {'class' : 'mw_basic_list_datetime media-no-text'}).text
     view = re.find('div', {'class' : 'mw_basic_list_hit media-no-text'}).text
