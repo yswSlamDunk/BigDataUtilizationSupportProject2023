@@ -172,10 +172,9 @@ def parallelPreprocessing(config, n_cores = 4):
     
 
 if __name__ == '__main__':
-    # parallelPreprocessing(config['샴푸&영양제'])
+    parallelPreprocessing(config['샴푸&영양제'])
     parallelPreprocessing(config['19~23세 탈모'])
     parallelPreprocessing(config['탈모수다'])
-    
-    # parallelPreprocessing(config['샴푸&두피제품 찾기'])
+    parallelPreprocessing(config['샴푸&두피제품 찾기'])
     # commentGood, commentBad 두 개는 공존함
     # 우선 fillna가 적용이 안되는 문제를 해결해야 함
