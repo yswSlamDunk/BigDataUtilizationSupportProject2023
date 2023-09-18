@@ -84,16 +84,21 @@ def clean(sentence):
 
 
 def preprocessingSentence(sentence, kkma):
-    sentence = clean(sentence)
-    sentence = cleanStr(sentence)
-    sentence = splitSentence(sentence)
-    sentence = spell_checker.check(sentence).checked
-    result = tagging_sentence(sentence, kkma)
-    
-    # 감정분석 결과 추가
-    sentimentResult = np.nan
+    try:
+        sentence = clean(sentence)
+        sentence = cleanStr(sentence)
+        sentence = splitSentence(sentence)
+        sentence = spell_checker.check(sentence).checked
+        result = tagging_sentence(sentence, kkma)
+        
+        # 감정분석 결과 추가
+        sentimentResult = np.nan
 
-    return sentence, result, sentimentResult
+        return sentence, result, sentimentResult
+    except:
+        print(sentence)
+        return 'error', 'error', 'error'
+
 
 
 
@@ -119,7 +124,8 @@ def savePreprocessingSentence(input):
                                                                                               index = False,
                                                                                               header = False,
                                                                                               mode = 'a',
-                                                                                              encoding = 'utf-8-sig')
+                                                                                              encoding = 'utf-8-sig',
+                                                                                              escapechar = '\\')
     else:
         for column in config['preprocessingColumns']:
             tmp_df = df[~pd.isnull(df[column])]
@@ -138,7 +144,8 @@ def savePreprocessingSentence(input):
                                                                                                   index = False,
                                                                                                   header = False,
                                                                                                   mode = 'a',
-                                                                                                  encoding = 'utf-8-sig')
+                                                                                                  encoding = 'utf-8-sig',
+                                                                                                  escapechar = '\\')
 
 
 def parallelPreprocessing(config, n_cores = 4): 
@@ -153,12 +160,14 @@ def parallelPreprocessing(config, n_cores = 4):
             pd.DataFrame(columns = list(df.columns) + config['additionalColumns'][1:]).to_csv(config['outputPath'] , 
                                                                                               header = True, 
                                                                                               index = False,
-                                                                                              encoding = 'utf-8-sig')
+                                                                                              encoding = 'utf-8-sig',
+                                                                                              escapechar = '\\')
         else:
             pd.DataFrame(columns = list(df.columns) + config['additionalColumns']).to_csv(config['outputPath'],
                                                                                          header = True,
                                                                                          index = False,
-                                                                                         encoding = 'utf-8-sig')
+                                                                                         encoding = 'utf-8-sig',
+                                                                                         escapechar = '\\')
     df_split = np.array_split(df, n_cores)
 
     if config['needTitleContentCombine'] == False:
@@ -172,9 +181,11 @@ def parallelPreprocessing(config, n_cores = 4):
     
 
 if __name__ == '__main__':
-    parallelPreprocessing(config['샴푸&영양제'])
-    parallelPreprocessing(config['19~23세 탈모'])
-    parallelPreprocessing(config['탈모수다'])
-    parallelPreprocessing(config['샴푸&두피제품 찾기'])
+    # parallelPreprocessing(config['샴푸&영양제'])
+    # parallelPreprocessing(config['19~23세 탈모'])
+    # parallelPreprocessing(config['탈모수다'])
+    # parallelPreprocessing(config['샴푸&두피제품 찾기'])
     # commentGood, commentBad 두 개는 공존함
     # 우선 fillna가 적용이 안되는 문제를 해결해야 함
+
+    print('asfd')
