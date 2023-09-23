@@ -5,15 +5,26 @@ import re
 from tqdm import tqdm
 
 from kss import split_sentences
-from hanspell import spell_checker
+# from hanspell import spell_checker
 from konlpy.tag import Okt
 
 from multiprocessing import Pool
 
-def tagging_sentence(sentence, okt):
+def tagging_sentence_old(sentence, okt):
     return okt.nouns(sentence)
 
+def tagging_sentence(sentence, kkma):
+    pos = kkma.pos(sentence)
+    result = []
 
+    for t in pos:
+        if t[1] in ['NNG', 'NNP', 'VV', 'VA']:
+            if t[1] == 'VV':
+                result.append(t[0] + '다')
+            else:
+                result.append(t[0])
+
+    return result
 
 def splitSentence(sentence):
     result = []
@@ -99,9 +110,9 @@ def savePreprocessingSentence(input):
         except:
             continue
         addDataFrame = pd.DataFrame({config['additionalColumns'][1]: sentence,
-                                        config['additionalColumns'][2]: [result],
-                                        config['additionalColumns'][3]: sentimentResult},
-                                        index = [i])
+                                    config['additionalColumns'][2]: [result],
+                                    config['additionalColumns'][3]: sentimentResult},
+                                    index = [i])
         concat_df = row.to_frame().T
         concat_df = concat_df.reindex([i])
         pd.concat([concat_df, addDataFrame], axis = 1, ignore_index = True).to_csv(config['outputPath'], 
