@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 import gensim
 from gensim import corpora
 
-from config import *
+from .config import *
 
 def startLDA(ldaConfig):
     if ldaConfig['isLdaColumns'] == False:
@@ -110,12 +110,13 @@ def make_topictable_per_doc(ldamodel, corpus):
 
 
 def painPointCluster(ldaConfig, returnPainPoint = False):
-    df = pd.read_excel(ldaConfig['inputPath'])
+    if 'fileFormat' in ldaConfig.keys():
+        df = pd.read_csv(ldaConfig['inputPath'])
+    else:
+        df = pd.read_excel(ldaConfig['inputPath'])
     df['topicsRatio'] = df['topicsRatio'].apply(lambda x : eval(x))
     tmp_df = df[['href', 'propTopic', 'topicsRatio']]
-    
     topicList = sorted(tmp_df['propTopic'].unique())
-    
     result_df = pd.DataFrame()
 
     for l, propTopic in enumerate(topicList):
@@ -157,9 +158,14 @@ def painPointCluster(ldaConfig, returnPainPoint = False):
                                    ignore_index = True)
     
     if returnPainPoint == True:
-        df.merge(result_df[['href', 'cluster']],
-                 on = ['href'],
-                 how = 'left').to_excel(ldaConfig['inputPath'], index = False)
+        if 'fileFormat' in ldaConfig.keys():
+            df.merge(result_df[['href', 'cluster']],
+                     on  = ['href'],
+                     how = 'left').to_csv(ldaConfig['inputPath'], index = False)
+        else:        
+            df.merge(result_df[['href', 'cluster']],
+                    on = ['href'],
+                    how = 'left').to_excel(ldaConfig['inputPath'], index = False)
 
 
 def topicTrend(ldaConfig, unit = 'Y', startDate = False):
@@ -197,13 +203,6 @@ def topicTrend(ldaConfig, unit = 'Y', startDate = False):
                      label = 'total')
         
         fig.savefig(os.path.join(ldaConfig['topicTrendPath'], f'topicTrend_{propTopic}.png'))
-
-
-# def
-
-# def painPoint(ldaConfig):
-
-
 
 
 if __name__ == '__main__':

@@ -9,7 +9,7 @@ from hanspell import spell_checker
 from konlpy.tag import Kkma
 
 from multiprocessing import Pool
-from config import *
+from .config import *
 
 
 def tagging_sentence(sentence, kkma):
